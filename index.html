@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC Compatibility & Charge Calculator</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --primary-hover: #004494;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --border: #dddddd;
+            --success: #28a745;
+            --success-bg: #d4edda;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: var(--card-bg);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 1rem;
+            background-color: #fff;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0,86,179,0.2);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            border: 2px solid var(--success);
+            background-color: var(--success-bg);
+            border-radius: 8px;
+        }
+
+        .result-title {
+            color: var(--success);
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+        
+        .result-subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #155724;
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        .final-value {
+            font-size: 1.8rem;
+            text-align: center;
+            font-weight: bold;
+            color: #155724;
+            margin-bottom: 20px;
+        }
+
+        .breakdown {
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .breakdown-step {
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+        }
+
+        .breakdown-step:last-child {
+            border-bottom: none;
+        }
+
+        .tooltip {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 3px;
+            display: block;
+        }
+
+        #toshiba-indoor-units-container {
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>HVAC Charge & Compatibility Calculator</h1>
+
+    <div class="form-group">
+        <label for="system-type">System Type</label>
+        <select id="system-type">
+            <option value="">-- Select System Type --</option>
+            <option value="37MUHA">37MUHA</option>
+            <option value="37MURA">37MURA</option>
+            <option value="37MARA">37MARA (Mini Split)</option>
+            <option value="37MHRAQ">37MHRAQ (Mini Split)</option>
+            <option value="Toshiba">Toshiba Carrier (MCY-MUB)</option>
+        </select>
+    </div>
+
+    <div class="form-group hidden" id="fg-outdoor">
+        <label for="outdoor-unit">Outdoor Unit Model</label>
+        <select id="outdoor-unit">
+            <option value="">-- Select Outdoor Unit --</option>
+        </select>
+    </div>
+
+    <div class="form-group hidden" id="fg-indoor">
+        <label for="indoor-unit">Compatible Indoor Unit</label>
+        <select id="indoor-unit">
+            <option value="">-- Select Indoor Unit --</option>
+        </select>
+    </div>
+
+    <div class="form-group hidden" id="fg-line-length">
+        <label for="line-length">Liquid Line Length (ft)</label>
+        <input type="number" id="line-length" min="0" step="1" placeholder="Enter total length in feet">
+    </div>
+
+    <div class="form-group hidden" id="fg-toshiba-count">
+        <label for="toshiba-count">Number of Indoor Units</label>
+        <input type="number" id="toshiba-count" min="1" max="9" step="1" placeholder="e.g., 3">
+        <span class="tooltip">Select between 1 and 9 indoor units.</span>
+    </div>
+
+    <div id="toshiba-indoor-units-container" class="hidden">
+        </div>
+
+    <button id="calc-btn" class="btn hidden" onclick="calculateCharge()">Calculate Additional Charge</button>
+
+    <div id="result-container" class="result-box hidden">
+        <h3 class="result-title">Additional Charge Required</h3>
+        <p class="result-subtitle">To be added to the system on-site</p>
+        <div class="final-value" id="final-charge">0.00 oz</div>
+        <div class="breakdown" id="calc-breakdown">
+            </div>
+        <button class="btn" style="background:#6c757d; margin-top:15px; font-size:0.9rem;" onclick="copyResults()">Copy Results</button>
+    </div>
+</div>
+
+<script>
+    // --- DATABASE ---
+    const db = {
+        "37MUHA": [
+            { out: "37MUHAQ18AA3", fact: 4.63, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ18XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ24XX3", baseExtraOz: 0 }
+            ]},
+            { out: "37MUHAQ24AA3", fact: 4.63, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ24XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ24XX3", baseExtraOz: 0 }
+            ]},
+            { out: "37MUHAQ30AA3", fact: 6.61, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ30XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ36XX3", baseExtraOz: 21.16 }
+            ]},
+            { out: "37MUHAQ36AA3", fact: 7.94, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ36XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ36XX3", baseExtraOz: 0 }
+            ]},
+            { out: "37MUHAQ48AA3", fact: 8.38, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ48XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ60XX3", baseExtraOz: 22.93 }
+            ]},
+            { out: "37MUHAQ60AA3", fact: 11.46, pre: 24.6, add: 0.7, indoors: [
+                { model: "45MUAAQ60XX3", baseExtraOz: 0 },
+                { model: "45MUHAQ60XX3", baseExtraOz: 0 }
+            ]}
+        ],
+        "37MURA": [
+            { out: "37MURAQ18AA3", fact: 3.20, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ18XX3", baseExtraOz: 0}] },
+            { out: "37MURAQ24AA3", fact: 5.73, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ24XX3", baseExtraOz: 0}] },
+            { out: "37MURAQ30AA3", fact: 6.61, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ30XX3", baseExtraOz: 0}] },
+            { out: "37MURAQ36AA3", fact: 7.28, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ36XX3", baseExtraOz: 0}] },
+            { out: "37MURAQ48AA3", fact: 8.38, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ48XX3", baseExtraOz: 0}] },
+            { out: "37MURAQ60AA3", fact: 8.38, pre: 24.6, add: 0.7, indoors: [{model: "45MUAAQ60XX3", baseExtraOz: 0}] }
+        ],
+        "37MARA": [
+            { out: "37MARAQ09AA3", fact: 2.03, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ12AA1", fact: 2.09, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ12AA3", fact: 2.03, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ18AA3", fact: 3.00, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ24AA3", fact: 4.41, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ30AA3", fact: 5.29, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MARAQ36AA3", fact: 7.05, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] }
+        ],
+        "37MHRAQ": [
+            { out: "37MHRAQ09AA1", fact: 1.34, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ09AA3", fact: 1.34, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ12AA1", fact: 1.52, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ12AA3", fact: 1.54, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ18AA3", fact: 2.54, pre: 24.6, add: 0.16, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ24AA3", fact: 3.35, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ30AA3", fact: 5.29, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] },
+            { out: "37MHRAQ36AA3", fact: 7.05, pre: 24.6, add: 0.32, indoors: [{model: "Any Compatible", baseExtraOz: 0}] }
+        ],
+        "Toshiba": [
+            { out: "MCY-MUB0368HS2P-UL (36K)", fact: 6.6 },
+            { out: "MCY-MUB0488HS2P-UL (48K)", fact: 6.6 },
+            { out: "MCY-MUB0608HS2P-UL (60K)", fact: 6.6 }
+        ]
+    };
+
+    const toshibaIndoorOptions = [
+        { cap: "9K", charge: 0.88 },
+        { cap: "12K", charge: 0.88 },
+        { cap: "18K", charge: 1.32 },
+        { cap: "24K", charge: 1.32 },
+        { cap: "30K", charge: 1.32 },
+        { cap: "36K", charge: 1.76 },
+        { cap: "42K", charge: 1.76 },
+        { cap: "48K", charge: 2.20 },
+        { cap: "60K", charge: 2.20 }
+    ];
+
+    // --- DOM ELEMENTS ---
+    const sysSelect = document.getElementById("system-type");
+    const outSelect = document.getElementById("outdoor-unit");
+    const inSelect = document.getElementById("indoor-unit");
+    const lineLength = document.getElementById("line-length");
+    const toshibaCount = document.getElementById("toshiba-count");
+    
+    const fgOut = document.getElementById("fg-outdoor");
+    const fgIn = document.getElementById("fg-indoor");
+    const fgLine = document.getElementById("fg-line-length");
+    const fgToshibaCount = document.getElementById("fg-toshiba-count");
+    const toshibaContainer = document.getElementById("toshiba-indoor-units-container");
+    const calcBtn = document.getElementById("calc-btn");
+    const resBox = document.getElementById("result-container");
+
+    // --- HELPER FUNCTION ---
+    function formatOz(totalOz) {
+        const lbs = Math.floor(totalOz / 16);
+        const oz = totalOz % 16;
+        return `${totalOz.toFixed(2)} oz (${lbs} lbs ${oz.toFixed(2)} oz)`;
+    }
+
+    // --- EVENT LISTENERS ---
+    sysSelect.addEventListener("change", function() {
+        resBox.classList.add("hidden");
+        const sys = this.value;
+
+        outSelect.innerHTML = '<option value="">-- Select Outdoor Unit --</option>';
+        inSelect.innerHTML = '<option value="">-- Select Indoor Unit --</option>';
+        lineLength.value = "";
+        toshibaCount.value = "";
+        toshibaContainer.innerHTML = "";
+        
+        if (!sys) {
+            fgOut.classList.add("hidden");
+            fgIn.classList.add("hidden");
+            fgLine.classList.add("hidden");
+            fgToshibaCount.classList.add("hidden");
+            toshibaContainer.classList.add("hidden");
+            calcBtn.classList.add("hidden");
+            return;
+        }
+
+        db[sys].forEach((item, index) => {
+            const opt = document.createElement("option");
+            opt.value = index; 
+            opt.textContent = item.out;
+            outSelect.appendChild(opt);
+        });
+
+        fgOut.classList.remove("hidden");
+        fgIn.classList.add("hidden");
+        fgLine.classList.add("hidden");
+        fgToshibaCount.classList.add("hidden");
+        toshibaContainer.classList.add("hidden");
+        calcBtn.classList.add("hidden");
+    });
+
+    outSelect.addEventListener("change", function() {
+        resBox.classList.add("hidden");
+        const sys = sysSelect.value;
+        const outIdx = this.value;
+
+        if (outIdx === "") {
+            fgIn.classList.add("hidden");
+            fgLine.classList.add("hidden");
+            fgToshibaCount.classList.add("hidden");
+            toshibaContainer.classList.add("hidden");
+            calcBtn.classList.add("hidden");
+            return;
+        }
+
+        if (sys === "Toshiba") {
+            fgIn.classList.add("hidden");
+            fgLine.classList.remove("hidden");
+            fgToshibaCount.classList.remove("hidden");
+            calcBtn.classList.remove("hidden");
+        } else {
+            const item = db[sys][outIdx];
+            
+            inSelect.innerHTML = '<option value="">-- Select Indoor Unit --</option>';
+            item.indoors.forEach((ind, i) => {
+                let extraText = ind.baseExtraOz > 0 ? ` (+${ind.baseExtraOz} oz Mismatch)` : "";
+                inSelect.innerHTML += `<option value="${i}">${ind.model}${extraText}</option>`;
+            });
+            
+            fgIn.classList.remove("hidden");
+            fgLine.classList.remove("hidden");
+            fgToshibaCount.classList.add("hidden");
+            toshibaContainer.classList.add("hidden");
+            calcBtn.classList.remove("hidden");
+        }
+    });
+
+    toshibaCount.addEventListener("input", function() {
+        let count = parseInt(this.value);
+        toshibaContainer.innerHTML = "";
+        
+        if (count > 0) {
+            toshibaContainer.classList.remove("hidden");
+            let title = document.createElement("label");
+            title.textContent = "Select Capacities for Indoor Units:";
+            title.style.marginBottom = "10px";
+            toshibaContainer.appendChild(title);
+
+            for(let i=1; i<=count; i++) {
+                let div = document.createElement("div");
+                div.className = "form-group";
+                div.style.marginBottom = "8px";
+                
+                let select = document.createElement("select");
+                select.className = "toshiba-in-select";
+                select.innerHTML = `<option value="0">-- Indoor Unit ${i} Capacity --</option>`;
+                
+                toshibaIndoorOptions.forEach(opt => {
+                    select.innerHTML += `<option value="${opt.charge}">${opt.cap} (${opt.charge} lbs addt'l)</option>`;
+                });
+
+                div.appendChild(select);
+                toshibaContainer.appendChild(div);
+            }
+        } else {
+            toshibaContainer.classList.add("hidden");
+        }
+    });
+
+    // --- CALCULATIONS ---
+    function calculateCharge() {
+        const sys = sysSelect.value;
+        const outIdx = outSelect.value;
+        let ll = parseFloat(lineLength.value);
+
+        if (isNaN(ll) || ll < 0) {
+            alert("Please enter a valid Liquid Line Length.");
+            return;
+        }
+
+        let breakdownHTML = "";
+        let totalAddOz = 0;
+        let finalLbs = 0;
+
+        if (sys === "Toshiba") {
+            const tCount = parseInt(toshibaCount.value);
+            if (isNaN(tCount) || tCount < 1) {
+                alert("Please enter the number of Toshiba indoor units (1-9).");
+                return;
+            }
+
+            const item = db[sys][outIdx];
+            const factCharge = item.fact;
+            
+            const llCharge = ll * 0.038;
+            breakdownHTML += `<div class="breakdown-step"><strong>Liquid Line Additional:</strong> <br> ${ll} ft × 0.038 lbs/ft = ${llCharge.toFixed(2)} lbs</div>`;
+
+            let indoorSum = 0;
+            const selects = document.querySelectorAll(".toshiba-in-select");
+            let missingSelection = false;
+            selects.forEach((sel) => {
+                let val = parseFloat(sel.value);
+                if (val === 0) missingSelection = true;
+                indoorSum += val;
+            });
+
+            if(missingSelection) {
+                alert("Please select the capacity for all Toshiba indoor units.");
+                return;
+            }
+
+            breakdownHTML += `<div class="breakdown-step"><strong>Indoor Units Additional:</strong> <br> Based on capacities selected = ${indoorSum.toFixed(2)} lbs</div>`;
+
+            const totalAddLbs = llCharge + indoorSum;
+            totalAddOz = totalAddLbs * 16;
+            finalLbs = factCharge + totalAddLbs;
+
+            breakdownHTML += `<div class="breakdown-step"><strong>Formula for Additional Charge:</strong><br><em>Line (${llCharge.toFixed(2)} lbs) + Indoor Units (${indoorSum.toFixed(2)} lbs) = ${totalAddLbs.toFixed(2)} lbs</em></div>`;
+            breakdownHTML += `<div class="breakdown-step" style="margin-top: 15px;"><strong>Total System Charge (For Reference):</strong><br>Factory (${factCharge} lbs) + Additional (${totalAddLbs.toFixed(2)} lbs) = <strong>${finalLbs.toFixed(2)} lbs</strong></div>`;
+
+        } else {
+            const inIdx = inSelect.value;
+            if (inIdx === "") {
+                alert("Please select an Indoor Unit.");
+                return;
+            }
+
+            const item = db[sys][outIdx];
+            const indoorItem = item.indoors[inIdx];
+
+            const factCharge = item.fact;
+            const preCharge = item.pre;
+            const addOzPerFt = item.add;
+            const baseExtraOz = indoorItem.baseExtraOz;
+            
+            let extraOz = 0;
+            
+            if (baseExtraOz > 0) {
+                breakdownHTML += `<div class="breakdown-step"><strong>Indoor Unit Mismatch Charge:</strong><br>
+                ${baseExtraOz} oz</div>`;
+            }
+
+            breakdownHTML += `<div class="breakdown-step"><strong>Pre-Charge Length:</strong> ${preCharge} ft</div>`;
+
+            if (ll > preCharge) {
+                let extraFt = ll - preCharge;
+                extraOz = extraFt * addOzPerFt;
+                breakdownHTML += `<div class="breakdown-step"><strong>Line Length Extra Charge:</strong><br>
+                1. Extra Length: ${ll} ft - ${preCharge} ft = ${extraFt.toFixed(1)} ft<br>
+                2. Factor: ${addOzPerFt} oz/ft<br>
+                3. Total: ${extraFt.toFixed(1)} ft × ${addOzPerFt} oz/ft = ${extraOz.toFixed(2)} oz</div>`;
+            } else {
+                breakdownHTML += `<div class="breakdown-step"><strong>Line Length Extra Charge:</strong><br>
+                Liquid line (${ll} ft) is within the pre-charge length (${preCharge} ft). No extra length refrigerant required.</div>`;
+            }
+
+            totalAddOz = baseExtraOz + extraOz;
+            const totalAddLbs = totalAddOz / 16;
+            finalLbs = factCharge + totalAddLbs;
+            
+            let formulaText = "";
+            if (baseExtraOz > 0) {
+                formulaText = `Mismatch (${baseExtraOz.toFixed(2)} oz) + Extra Line (${extraOz.toFixed(2)} oz) = ${totalAddOz.toFixed(2)} oz`;
+            } else {
+                formulaText = `Extra Line (${extraOz.toFixed(2)} oz) = ${totalAddOz.toFixed(2)} oz`;
+            }
+
+            breakdownHTML += `<div class="breakdown-step"><strong>Formula for Additional Charge:</strong><br><em>${formulaText}</em></div>`;
+            breakdownHTML += `<div class="breakdown-step" style="margin-top: 15px;"><strong>Total System Charge (For Reference):</strong><br>Factory (${factCharge} lbs) + Additional (${totalAddLbs.toFixed(2)} lbs) = <strong>${finalLbs.toFixed(2)} lbs</strong></div>`;
+        }
+
+        // Output Result in format: XX.XX oz (Y lbs Z.ZZ oz)
+        document.getElementById("final-charge").textContent = formatOz(totalAddOz);
+        document.getElementById("calc-breakdown").innerHTML = breakdownHTML;
+        resBox.classList.remove("hidden");
+        
+        resBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyResults() {
+        const title = document.getElementById("final-charge").innerText;
+        let textToCopy = `Additional Refrigerant Charge Required: ${title}\n\nBreakdown:\n`;
+        
+        const steps = document.querySelectorAll(".breakdown-step");
+        steps.forEach(step => {
+            textToCopy += "- " + step.innerText.replace(/\n/g, ' ') + "\n";
+        });
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert("Results copied to clipboard!");
+        }).catch(err => {
+            alert("Failed to copy results.");
+        });
+    }
+</script>
+
+</body>
+</html>
